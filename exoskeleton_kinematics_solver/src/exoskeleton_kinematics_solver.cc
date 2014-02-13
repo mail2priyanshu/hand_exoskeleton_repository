@@ -9,6 +9,7 @@
 #include "exo_finger.h"
 #endif
 
+
 // Motor specific header files
 //#include <dynamixel.h>
 
@@ -30,17 +31,16 @@ extern "C" {
 #include <signal.h>
 #include <semaphore.h>
 
-// Motion capture library
+static RT_TASK *main_task, *task;
+int running_flag = 1;
+RTIME counter_time=0;
+
+//// Motion capture library
 //#ifndef MOTION_CAPTURE_H
 //#define MOTION_CAPTURE_H
 //#include "owl.h"
-//#include "motion_capture/motion_capture.h"
+//#include "motion_capture.h"
 //#endif // MOTION_CAPTURE_H
-
-using namespace std;
-
-static RT_TASK *main_task, *task;
-int running_flag = 1;
 
 ofstream encoder_data_file;
 ifstream recorded_data_file;
@@ -51,7 +51,7 @@ double estimates[12]={0,0,0,0,0,0,0,0,0,0,0,0};
 
 int32_t encoder_data_I32[6] = {0, 0, 0, 0, 0, 0};
 
-RTIME counter_time=0;
+
 
 void* sensing_estimation(void *args)
 {
