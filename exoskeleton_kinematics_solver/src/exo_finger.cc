@@ -10,25 +10,46 @@ exo_finger::exo_finger()
 
     // Geometric Parameters Lengths
     //Mok
+//    double pixeltomm = 58.65/(130.32*1000);
+//    x_A = pixeltomm*6.15;
+//    y_A = -pixeltomm*73.96;
+//    l_AB = sqrt(x_A*x_A+y_A*y_A);
+//
+//    l_BC = pixeltomm*110.67;
+//
+//    l_CD = pixeltomm*50.89;
+//    l_AH = pixeltomm*95.32;
+//
+//    l_CE = pixeltomm*90.6;
+//    l_EF = pixeltomm*86.33;
+//    l_FG = pixeltomm*47.05;
+//    l_GH = pixeltomm*24.7;
+//    l_GK = pixeltomm*22.64;
+//    l_FI = pixeltomm*60.07;
+//    l_IJ = pixeltomm*35.5;
+
+    // Priyanshu
     double pixeltomm = 58.65/(130.32*1000);
-    x_A = pixeltomm*6.15;
-    y_A = -pixeltomm*73.96;
-    l_AB = sqrt(x_A*x_A+y_A*y_A);
+    x_A = 0.007;
+    y_A = -0.026;
 
-    l_BC = pixeltomm*110.67;
+    l_BC = 0.045;
 
-    l_CD = pixeltomm*50.89;
-    l_AH = pixeltomm*95.32;
+    l_CD = 0.023;
+    l_AH = 0.04473;
 
-    l_CE = pixeltomm*90.6;
-    l_EF = pixeltomm*86.33;
-    l_FG = pixeltomm*47.05;
-    l_GH = pixeltomm*24.7;
-    l_GK = pixeltomm*22.64;
-    l_FI = pixeltomm*60.07;
-    l_IJ = pixeltomm*35.5;
+    l_CE = 0.03772;
+    l_EF = 0.03912;
+    l_FG = 0.02026;
+    l_GH = 0.011;
+    l_GK = 0.007;
+    l_FI = 0.02617;
+    l_IJ = 0.01968;
 
     // Evaluating model parameters
+    // MCP Chain
+    l_AB = sqrt(x_A*x_A+y_A*y_A);
+
     // PIP Chain
     l_HF = sqrt(l_GH*l_GH+l_FG*l_FG);
     t_HFG = atan(l_GH/l_FG);
@@ -61,7 +82,10 @@ bool solve_quad_eqn(double A, double B, double C, double *x)
         return true;
     }
     else
+    {
+        cout<<"A="<<A<<" B="<<B<<" C="<<C<<" A^2+B^2-C^2="<<A*A+B*B-C*C<<endl;
         return false;
+    }
 }
 
 
@@ -119,6 +143,8 @@ bool exo_finger::exo_kinematics(double *exo_t, double *estimates)
     if(exo_kin_eqns_mcp(x))
     {
         t_mcp = x[1];
+        while(t_mcp<PI)
+            t_mcp = t_mcp+2*PI;
         exo_t2 = t_mcp - PI/2;
         exo_x3 = sqrt(pow(l_BC*cos(exo_t1)+l_CD*sin(t_mcp)-x_A,2)+pow(l_BC*sin(exo_t1)-l_CD*cos(t_mcp)-y_A,2));        
 //        cout<<"t1_r= "<<exo_t1_rel*180/PI<<", x3 ="<<exo_x3<<", mcp = "<<t_mcp*180/PI<<", t2 = "<<exo_t2*180/PI<<endl;
@@ -143,7 +169,7 @@ bool exo_finger::exo_kinematics(double *exo_t, double *estimates)
                        l_CH*cos(exo_t2+t_DCH)-l_CE*cos(exo_t5)+l_EF*cos(exo_t5+exo_t6_rel))+t_HFG;
         exo_t6 = exo_t5+PI+exo_t6_rel;
         t_pip = exo_t7+PI/2;
-        if(t_pip<0)
+        while(t_pip<PI)
             t_pip = t_pip+2*PI;
 //        cout<<"t5= "<<exo_t5*180/PI<<", t6= "<<exo_t6*180/PI<<", t7 ="<<exo_t7*180/PI<<", pip = "<<t_pip*180/PI<<endl;
     }
@@ -157,7 +183,7 @@ bool exo_finger::exo_kinematics(double *exo_t, double *estimates)
     if(exo_kin_eqns_dip(x))
     {
         t_dip = x[0];
-        if(t_dip<0)
+        while(t_dip<PI)
             t_dip = t_dip+2*PI;
         exo_t10 = t_dip-PI/2;
         exo_x11 = sqrt(pow(l_FI*cos(exo_t9)+l_IJ*cos(exo_t10)-l_KF*cos(exo_t7+t_GFK),2)+pow(l_FI*sin(exo_t9)+l_IJ*sin(exo_t10)-l_KF*sin(exo_t7+t_GFK),2));
@@ -188,7 +214,7 @@ bool exo_finger::exo_kinematics(double *exo_t, double *estimates)
     else
         return false;
 }
-
+ // Function to calibrate the index finger
 bool exo_finger::exo_calibration()
 {
 

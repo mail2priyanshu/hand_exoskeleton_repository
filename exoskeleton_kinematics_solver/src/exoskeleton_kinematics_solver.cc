@@ -66,7 +66,7 @@ void* sensing_estimation(void *args)
 
     exo_finger index_finger;
 
-    double x[6]={0.015,7*PI/4,PI/4,7*PI/4,0.005,7*PI/4};
+//    double x[6]={0.015,7*PI/4,PI/4,7*PI/4,0.005,7*PI/4};
 
     NiFpga_Session session;
     cout<<"Initializing..."<<endl;
@@ -107,13 +107,14 @@ void* sensing_estimation(void *args)
                 // reading encoder data from sbRIO
                 NiFpga_MergeStatus(&status,  NiFpga_ReadArrayI32(session,NiFpga_exoskeleton_controller_IndicatorArrayI32_sensordata,encoder_data_I32,6));
 
-                cout<<encoder_data_I32[0]<<"\t"<<encoder_data_I32[2]<<"\t"<<encoder_data_I32[3]<<endl;
+//                cout<<encoder_data_I32[0]<<"\t"<<encoder_data_I32[2]<<"\t"<<encoder_data_I32[3]<<endl;
 
                 // converting voltage data to angles
                 //                exo_abd_angle = (ABD_ANG-MCP_EXT_ANG)/(MCP_FLEX_V-MCP_EXT_V)*(encoder_data_I32[0]-MCP_EXT_V)+MCP_EXT_ANG;
-                exo_dip_rel_angle = (DIP_FLEX_ANG-DIP_EXT_ANG)/(DIP_FLEX_V-DIP_EXT_V)*(encoder_data_I32[0]-DIP_EXT_V)+DIP_EXT_ANG;
-                exo_pip_rel_angle = (PIP_FLEX_ANG-PIP_EXT_ANG)/(PIP_FLEX_V-PIP_EXT_V)*(encoder_data_I32[1]-PIP_EXT_V)+PIP_EXT_ANG;
-                exo_mcp_rel_angle = (MCP_FLEX_ANG-MCP_EXT_ANG)/(MCP_FLEX_V-MCP_EXT_V)*(encoder_data_I32[2]-MCP_EXT_V)+MCP_EXT_ANG;
+                exo_mcp_rel_angle = (MCP_FLEX_ANG-MCP_EXT_ANG)/(MCP_FLEX_V-MCP_EXT_V)*(encoder_data_I32[0]-MCP_EXT_V)+MCP_EXT_ANG;
+                exo_pip_rel_angle = (PIP_FLEX_ANG-PIP_EXT_ANG)/(PIP_FLEX_V-PIP_EXT_V)*(encoder_data_I32[2]-PIP_EXT_V)+PIP_EXT_ANG;
+                exo_dip_rel_angle = (DIP_FLEX_ANG-DIP_EXT_ANG)/(DIP_FLEX_V-DIP_EXT_V)*(encoder_data_I32[3]-DIP_EXT_V)+DIP_EXT_ANG;
+
 
                 exo_t_rel[0] = exo_mcp_rel_angle*PI/180;
                 exo_t_rel[1] = 0;
@@ -121,24 +122,29 @@ void* sensing_estimation(void *args)
                 exo_t_rel[3] = exo_dip_rel_angle*PI/180;
                 exo_t_rel[4] = 0;
 
-                cout<<exo_dip_rel_angle<<"\t"<<exo_pip_rel_angle<<"\t"<<exo_pip_rel_angle<<endl;
+//                cout<<exo_dip_rel_angle<<"\t"<<exo_pip_rel_angle<<"\t"<<exo_pip_rel_angle<<endl;
                 index_finger.exo_kinematics(exo_t_rel,estimates);
 
-                x[0] = estimates[2];
-                x[1] = estimates[3];
-                x[2] = estimates[4];
-                x[3] = estimates[7];
-                x[4] = estimates[10];
-                x[5] = estimates[11];
+//                x[0] = estimates[2];
+//                x[1] = estimates[3];
+//                x[2] = estimates[4];
+//                x[3] = estimates[7];
+//                x[4] = estimates[10];
+//                x[5] = estimates[11];
 
                 rt_sleep_until(nano2count(old_time+1000000000/ENCODER_READ_FREQ));
                 current_time = rt_get_time_ns();//clock();
 
                 cout<<"("<<(current_time-old_time)<<")";
-                // printing the encoder data on screen
 
+                // printing the encoder data on screen
                 for(i=0;i<12;i++)
-                    cout<<" "<<estimates[i];
+                {
+                    if(i==2||i==11)
+                        cout<<"\t"<<estimates[i];
+                    else
+                        cout<<"\t"<<estimates[i]*180/PI;
+                }
                 cout<<endl;
 
                 // writing the encoder data to the file
@@ -176,74 +182,74 @@ void* sensing_estimation(void *args)
 }
 
 
-//void* sensing_estimation(void *args)
-//{
-//    unsigned long task_name =nam2num("ENCODER");
-//
-//    int i;//,j=0;
-//    RTIME old_time, current_time=0;
-//    double t= 0;
-//
-//    exo_finger index_finger;
-//
-//    double x[6]={0.015,7*PI/4,PI/4,7*PI/4,0.005,7*PI/4};
-//
-//    if (!(task = rt_task_init_schmod(task_name, 0, 0, 0, SCHED_FIFO, CPU_MAP-1)))
-//    {
-//        cout<<"CANNOT INIT TASK"<<task_name<<endl;
-//        return 0;
-//    }
-//
-//
-//    cout<<"THREAD INIT EXOSKELETON CONTROLLER: name = "<<task_name<<", address = "<<task<<endl;
-//    mlockall(MCL_CURRENT | MCL_FUTURE);
-//    rt_make_hard_real_time();
-//
-//    while(running_flag)
-//    {
-//        old_time = rt_get_time_ns();
-//        t = (old_time-counter_time)/1e9;
-//
-//        //        exo_t_rel[0] = 25*PI/180+20*PI*sin(PI*t)/180;
-//        //        exo_t_rel[1] = 0;
-//        //        exo_t_rel[2] = 55*PI/180+35*PI*sin(PI*t)/180;
-//        //        exo_t_rel[3] = 145*PI/180+35*PI*sin(PI*t)/180;
-//        //        exo_t_rel[4] = 0;
-//
-//        recorded_data_file>>exo_t_rel[0]>>exo_t_rel[2]>>exo_t_rel[3];
-//        //        cout<<"exo_t1_rel="<<exo_t_rel[0]<<" exo_t6_rel="<<exo_t_rel[2]<<" exo_t9_rel="<<exo_t_rel[3];
-//
-//        index_finger.exo_kinematics(exo_t_rel,estimates);
-//
-//        x[0] = estimates[2];
-//        x[1] = estimates[3];
-//        x[2] = estimates[4];
-//        x[3] = estimates[7];
-//        x[4] = estimates[10];
-//        x[5] = estimates[11];
-//
-//        rt_sleep_until(nano2count(old_time+1000000000/ENCODER_READ_FREQ));
-//        current_time = rt_get_time_ns();//clock();
-//
-//        cout<<"("<<(current_time-old_time)<<")";
-//
-//        for(i=0;i<12;i++)
-//            cout<<" "<<estimates[i];
-//        cout<<endl;
-//
-//        // writing the encoder data to the file
-//        encoder_data_file<<t;
-//        for(i=0;i<12;i++)
-//            encoder_data_file<<"\t"<<estimates[i];
-//        encoder_data_file<<"\t"<<exo_t_rel[0]<<"\t"<<exo_t_rel[2]<<"\t"<<exo_t_rel[3];
-//        encoder_data_file<<endl;
-//
-//    }
-//
-//    rt_make_soft_real_time();
-//    rt_task_delete(task);
-//    return 0;
-//}
+void* recorded_estimation(void *args)
+{
+    unsigned long task_name =nam2num("ENCODER");
+
+    int i;//,j=0;
+    RTIME old_time, current_time=0;
+    double t= 0;
+
+    exo_finger index_finger;
+
+    double x[6]={0.015,7*PI/4,PI/4,7*PI/4,0.005,7*PI/4};
+
+    if (!(task = rt_task_init_schmod(task_name, 0, 0, 0, SCHED_FIFO, CPU_MAP-1)))
+    {
+        cout<<"CANNOT INIT TASK"<<task_name<<endl;
+        return 0;
+    }
+
+
+    cout<<"THREAD INIT EXOSKELETON CONTROLLER: name = "<<task_name<<", address = "<<task<<endl;
+    mlockall(MCL_CURRENT | MCL_FUTURE);
+    rt_make_hard_real_time();
+
+    while(running_flag)
+    {
+        old_time = rt_get_time_ns();
+        t = (old_time-counter_time)/1e9;
+
+        //        exo_t_rel[0] = 25*PI/180+20*PI*sin(PI*t)/180;
+        //        exo_t_rel[1] = 0;
+        //        exo_t_rel[2] = 55*PI/180+35*PI*sin(PI*t)/180;
+        //        exo_t_rel[3] = 145*PI/180+35*PI*sin(PI*t)/180;
+        //        exo_t_rel[4] = 0;
+
+        recorded_data_file>>exo_t_rel[0]>>exo_t_rel[2]>>exo_t_rel[3];
+        //        cout<<"exo_t1_rel="<<exo_t_rel[0]<<" exo_t6_rel="<<exo_t_rel[2]<<" exo_t9_rel="<<exo_t_rel[3];
+
+        index_finger.exo_kinematics(exo_t_rel,estimates);
+
+        x[0] = estimates[2];
+        x[1] = estimates[3];
+        x[2] = estimates[4];
+        x[3] = estimates[7];
+        x[4] = estimates[10];
+        x[5] = estimates[11];
+
+        rt_sleep_until(nano2count(old_time+1000000000/ENCODER_READ_FREQ));
+        current_time = rt_get_time_ns();//clock();
+
+        cout<<"("<<(current_time-old_time)<<")";
+
+        for(i=0;i<12;i++)
+            cout<<" "<<estimates[i];
+        cout<<endl;
+
+        // writing the encoder data to the file
+        encoder_data_file<<t;
+        for(i=0;i<12;i++)
+            encoder_data_file<<"\t"<<estimates[i];
+        encoder_data_file<<"\t"<<exo_t_rel[0]<<"\t"<<exo_t_rel[2]<<"\t"<<exo_t_rel[3];
+        encoder_data_file<<endl;
+
+    }
+
+    rt_make_soft_real_time();
+    rt_task_delete(task);
+    return 0;
+}
 
 
 
@@ -254,7 +260,7 @@ void* plot_data(void *args)
     int j=0;
     double t=0;
     bool print_flag=0;
-    int plot_limits[2]={0,500};
+    int plot_limits[2]={-100,500};
 
     RTIME old_time;
 
@@ -287,23 +293,23 @@ void* plot_data(void *args)
 //        plot_data[2][j] = encoder_data_I32[3];
 //        plot_limits[0]=0;
 //        plot_limits[1]=5000;
+//        cout<<encoder_data_I32[0]<<"\t"<<encoder_data_I32[2]<<"\t"<<encoder_data_I32[3]<<endl;
 
         // Exoskeleton Joint Angles
 //        plot_data[0][j] = exo_t_rel[0]*180/PI;
 //        plot_data[1][j] = exo_t_rel[2]*180/PI;
 //        plot_data[2][j] = exo_t_rel[3]*180/PI;
-//        plot_limits[0]=0;
-//        plot_limits[1]=500;
+//        cout<<exo_t_rel[0]*180/PI<<"\t"<<exo_t_rel[2]*180/PI<<"\t"<<exo_t_rel[3]*180/PI<<endl;
 
         // Estimated Angles
-        plot_data[0][j] = estimates[3]*180/PI;
-        plot_data[1][j] = estimates[7]*180/PI;
-        plot_data[2][j] = estimates[11]*180/PI;
+//        plot_data[0][j] = estimates[3]*180/PI;
+//        plot_data[1][j] = estimates[7]*180/PI;
+//        plot_data[2][j] = estimates[11]*180/PI;
         
         // Finger Joint Angles
-//        plot_data[0][j] = (2*PI-estimates[3])*180/PI;
-//        plot_data[1][j] = (2*PI-estimates[7])*180/PI-plot_data[0][j];
-//        plot_data[2][j] = (2*PI-estimates[11])*180/PI-plot_data[0][j]-plot_data[1][j];
+        plot_data[0][j] = (2*PI-estimates[3])*180/PI;
+        plot_data[1][j] = (2*PI-estimates[7])*180/PI-plot_data[0][j];
+        plot_data[2][j] = (2*PI-estimates[11])*180/PI-plot_data[0][j]-plot_data[1][j];
 
         if(j>=NPOINTS)
         {
@@ -363,6 +369,7 @@ int main(int argc, char *argv[])
     counter_time = rt_get_time_ns();
 
     //    pthread_create(&motor_control_thread, 0, motor_control, (void *)(result));
+//    pthread_create(&sensing_estimation_thread, 0, recorded_estimation, (void *)(result));
     pthread_create(&sensing_estimation_thread, 0, sensing_estimation, (void *)(result));
     pthread_create(&plotting_thread, 0, plot_data, (void *)(result));
     //    pthread_create(&capture_motion_thread, 0, capture_motion, (void *)(result));

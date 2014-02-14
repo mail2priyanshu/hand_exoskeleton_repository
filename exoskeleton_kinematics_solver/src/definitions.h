@@ -37,7 +37,7 @@
 //#define FIFO 1
 
 // Gnuplot
-#define NPOINTS 100
+#define NPOINTS 50
 
 // Hall-sensor Calibration Variables
 #define MCP_FLEX_ANG 42.0f
@@ -47,12 +47,12 @@
 #define DIP_FLEX_ANG 180.0f//338.53f
 #define DIP_EXT_ANG 90.0f//252.9f
 
-#define MCP_FLEX_V 612.0f
-#define MCP_EXT_V 1642.0f
-#define PIP_FLEX_V 558//3890.0f
-#define PIP_EXT_V 1578//1590.0f
-#define DIP_FLEX_V 2702//3890.0f
-#define DIP_EXT_V 590//1590.0f
+#define MCP_FLEX_V 800.0f
+#define MCP_EXT_V 1732.0f
+#define PIP_FLEX_V 555//3890.0f
+#define PIP_EXT_V 1550//1590.0f
+#define DIP_FLEX_V 2814//3890.0f
+#define DIP_EXT_V 630//1590.0f
 
 // Control table address
 #define P_GOAL_POSITION_L	30
