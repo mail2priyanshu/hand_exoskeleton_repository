@@ -1,19 +1,16 @@
-#ifndef DEFINITIONS
-#define DEFINITIONS
+//PURPOSE : Class header file implementing the kinematics solution for the hand exoskeleton being developed in the ReNeu Robotics Lab at The University of Texas at Austin
+//AUTHORS  : Priyanshu Agarwal
+//CONTACT : mail2priyanshu@utexas.edu
+//AFFILIATION : The University of Texas at Austin
+//To DOs
+//1. Add auto calibration functionality to automatically estimate the kinematic model parameters
+//2.
+
+/////////////////////////////////////////////////////////////////////
+#ifndef DEFINITIONS_H
+#define DEFINITIONS_H
 #include "definitions.h"
 #endif
-
-//#define SAMPLE_SIZE 10000
-#define MAXEVAL 1e8
-#define MAXTIME 600
-
-using namespace Eigen;
-using namespace std;
-
-//typedef struct {
-//    VectorNd tau_m;
-//    VectorNd theta_m;
-//} joint_torque;
 
 class exo_finger {
     double x_A, y_A, r_j, l_AB, l_BC, l_CD, l_CE, l_EF, l_FG, l_GH, l_FI, l_IJ, l_JK, l_GK, l_AH; // user-defined coupled model parameters

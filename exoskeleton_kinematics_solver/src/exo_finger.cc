@@ -1,3 +1,12 @@
+//PURPOSE : Class function definitions implementing the kinematics solution for the hand exoskeleton being developed in the ReNeu Robotics Lab at The University of Texas at Austin
+//AUTHORS  : Priyanshu Agarwal
+//CONTACT : mail2priyanshu@utexas.edu
+//AFFILIATION : The University of Texas at Austin
+//To DOs
+//1. Add auto calibration functionality to automatically estimate the kinematic model parameters
+//2.
+
+/////////////////////////////////////////////////////////////////////
 // Exoskeleton Kinematics/Dynamics header files
 #ifndef EXO_FINGER
 #define EXO_FINGER
@@ -135,8 +144,6 @@ bool exo_finger::exo_kinematics(double *exo_t, double *estimates)
     exo_abad = exo_t[4];
     exo_t1 = 2*PI-exo_t1_rel;
 
-//    cout<<"exo_t1_rel="<<exo_t1_rel*180/PI<<" exo_t6_rel="<<exo_t6_rel*180/PI<<" exo_t9_rel="<<exo_t9_rel*180/PI<<endl;
-
     double x[2], y[2];
 
     // MCP Chain
@@ -147,7 +154,6 @@ bool exo_finger::exo_kinematics(double *exo_t, double *estimates)
             t_mcp = t_mcp+2*PI;
         exo_t2 = t_mcp - PI/2;
         exo_x3 = sqrt(pow(l_BC*cos(exo_t1)+l_CD*sin(t_mcp)-x_A,2)+pow(l_BC*sin(exo_t1)-l_CD*cos(t_mcp)-y_A,2));        
-//        cout<<"t1_r= "<<exo_t1_rel*180/PI<<", x3 ="<<exo_x3<<", mcp = "<<t_mcp*180/PI<<", t2 = "<<exo_t2*180/PI<<endl;
     }
     else
     {
@@ -171,7 +177,6 @@ bool exo_finger::exo_kinematics(double *exo_t, double *estimates)
         t_pip = exo_t7+PI/2;
         while(t_pip<PI)
             t_pip = t_pip+2*PI;
-//        cout<<"t5= "<<exo_t5*180/PI<<", t6= "<<exo_t6*180/PI<<", t7 ="<<exo_t7*180/PI<<", pip = "<<t_pip*180/PI<<endl;
     }
     else
     {
@@ -187,7 +192,6 @@ bool exo_finger::exo_kinematics(double *exo_t, double *estimates)
             t_dip = t_dip+2*PI;
         exo_t10 = t_dip-PI/2;
         exo_x11 = sqrt(pow(l_FI*cos(exo_t9)+l_IJ*cos(exo_t10)-l_KF*cos(exo_t7+t_GFK),2)+pow(l_FI*sin(exo_t9)+l_IJ*sin(exo_t10)-l_KF*sin(exo_t7+t_GFK),2));
-//        cout<<"t9= "<<exo_t9*180/PI<<", t10= "<<exo_t10*180/PI<<", x11 ="<<exo_x11<<", dip = "<<t_dip*180/PI<<endl;
     }
     else
     {

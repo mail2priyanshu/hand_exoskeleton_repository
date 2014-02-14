@@ -1,3 +1,13 @@
+//PURPOSE : Solve kinematics of the hand exoskeleton being developed in the ReNeu Robotics Lab at The University of Texas at Austin
+//AUTHORS  : Priyanshu Agarwal
+//CONTACT : mail2priyanshu@utexas.edu
+//AFFILIATION : The University of Texas at Austin
+//To DOs
+//1. Make class for motion capture device
+//2. Make class for motor controller
+//3. Make class for sensor (NI stuff)
+
+/////////////////////////////////////////////////////////////////////
 #ifndef DEFINITIONS
 #define DEFINITIONS
 #include "definitions.h"
@@ -14,7 +24,6 @@
 //#include <dynamixel.h>
 
 // Encoder header files
-//#include "NiFpga_test_rig_controller.h"
 #include "NiFpga_exoskeleton_controller.h"
 
 // RTAI header files
@@ -66,8 +75,6 @@ void* sensing_estimation(void *args)
 
     exo_finger index_finger;
 
-//    double x[6]={0.015,7*PI/4,PI/4,7*PI/4,0.005,7*PI/4};
-
     NiFpga_Session session;
     cout<<"Initializing..."<<endl;
     /* must be called before any other calls */
@@ -107,8 +114,6 @@ void* sensing_estimation(void *args)
                 // reading encoder data from sbRIO
                 NiFpga_MergeStatus(&status,  NiFpga_ReadArrayI32(session,NiFpga_exoskeleton_controller_IndicatorArrayI32_sensordata,encoder_data_I32,6));
 
-//                cout<<encoder_data_I32[0]<<"\t"<<encoder_data_I32[2]<<"\t"<<encoder_data_I32[3]<<endl;
-
                 // converting voltage data to angles
                 //                exo_abd_angle = (ABD_ANG-MCP_EXT_ANG)/(MCP_FLEX_V-MCP_EXT_V)*(encoder_data_I32[0]-MCP_EXT_V)+MCP_EXT_ANG;
                 exo_mcp_rel_angle = (MCP_FLEX_ANG-MCP_EXT_ANG)/(MCP_FLEX_V-MCP_EXT_V)*(encoder_data_I32[0]-MCP_EXT_V)+MCP_EXT_ANG;
@@ -122,15 +127,7 @@ void* sensing_estimation(void *args)
                 exo_t_rel[3] = exo_dip_rel_angle*PI/180;
                 exo_t_rel[4] = 0;
 
-//                cout<<exo_dip_rel_angle<<"\t"<<exo_pip_rel_angle<<"\t"<<exo_pip_rel_angle<<endl;
                 index_finger.exo_kinematics(exo_t_rel,estimates);
-
-//                x[0] = estimates[2];
-//                x[1] = estimates[3];
-//                x[2] = estimates[4];
-//                x[3] = estimates[7];
-//                x[4] = estimates[10];
-//                x[5] = estimates[11];
 
                 rt_sleep_until(nano2count(old_time+1000000000/ENCODER_READ_FREQ));
                 current_time = rt_get_time_ns();//clock();
@@ -210,14 +207,7 @@ void* recorded_estimation(void *args)
         old_time = rt_get_time_ns();
         t = (old_time-counter_time)/1e9;
 
-        //        exo_t_rel[0] = 25*PI/180+20*PI*sin(PI*t)/180;
-        //        exo_t_rel[1] = 0;
-        //        exo_t_rel[2] = 55*PI/180+35*PI*sin(PI*t)/180;
-        //        exo_t_rel[3] = 145*PI/180+35*PI*sin(PI*t)/180;
-        //        exo_t_rel[4] = 0;
-
         recorded_data_file>>exo_t_rel[0]>>exo_t_rel[2]>>exo_t_rel[3];
-        //        cout<<"exo_t1_rel="<<exo_t_rel[0]<<" exo_t6_rel="<<exo_t_rel[2]<<" exo_t9_rel="<<exo_t_rel[3];
 
         index_finger.exo_kinematics(exo_t_rel,estimates);
 
@@ -368,7 +358,6 @@ int main(int argc, char *argv[])
 
     counter_time = rt_get_time_ns();
 
-    //    pthread_create(&motor_control_thread, 0, motor_control, (void *)(result));
 //    pthread_create(&sensing_estimation_thread, 0, recorded_estimation, (void *)(result));
     pthread_create(&sensing_estimation_thread, 0, sensing_estimation, (void *)(result));
     pthread_create(&plotting_thread, 0, plot_data, (void *)(result));

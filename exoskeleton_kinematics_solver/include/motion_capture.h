@@ -1,6 +1,14 @@
+//PURPOSE : Header file for the Phase Space Motion Capture device
+//AUTHORS  : Priyanshu Agarwal
+//CONTACT : mail2priyanshu@utexas.edu
+//AFFILIATION : The University of Texas at Austin
+//To DOs
+//1. Make proper header file for motion capture device
+//2.
+
+/////////////////////////////////////////////////////////////////////
 #ifndef MOTION_CAPTURE_H
 #define MOTION_CAPTURE_H
-
 #endif // MOTION_CAPTURE_H
 
 void owl_print_error(const char *s, int n)
