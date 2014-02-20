@@ -19,7 +19,6 @@
 #include "exo_finger.h"
 #endif
 
-
 // Motor specific header files
 //#include <dynamixel.h>
 
@@ -61,7 +60,6 @@ double estimates[12]={0,0,0,0,0,0,0,0,0,0,0,0};
 int32_t encoder_data_I32[6] = {0, 0, 0, 0, 0, 0};
 
 
-
 void* sensing_estimation(void *args)
 {
     unsigned long task_name =nam2num("ENCODER");
@@ -69,7 +67,7 @@ void* sensing_estimation(void *args)
     int i;//,j=0;
     //    bool flag_points=0;
 
-    double exo_mcp_rel_angle=0, exo_pip_rel_angle = 0, exo_dip_rel_angle=0; //exo_prox_angle = 0
+    double exo_mcp_rel_angle=0, exo_mcp_pip_rel_angle=0, exo_pip_rel_angle = 0, exo_dip_rel_angle=0; //exo_prox_angle = 0
     RTIME old_time, current_time=0;
     double t= 0;
 
@@ -117,12 +115,13 @@ void* sensing_estimation(void *args)
                 // converting voltage data to angles
                 //                exo_abd_angle = (ABD_ANG-MCP_EXT_ANG)/(MCP_FLEX_V-MCP_EXT_V)*(encoder_data_I32[0]-MCP_EXT_V)+MCP_EXT_ANG;
                 exo_mcp_rel_angle = (MCP_FLEX_ANG-MCP_EXT_ANG)/(MCP_FLEX_V-MCP_EXT_V)*(encoder_data_I32[0]-MCP_EXT_V)+MCP_EXT_ANG;
+                exo_mcp_pip_rel_angle = (MCP_PIP_FLEX_ANG-MCP_PIP_EXT_ANG)/(MCP_PIP_FLEX_V-MCP_PIP_EXT_V)*(encoder_data_I32[1]-MCP_PIP_EXT_V)+MCP_PIP_EXT_ANG;
                 exo_pip_rel_angle = (PIP_FLEX_ANG-PIP_EXT_ANG)/(PIP_FLEX_V-PIP_EXT_V)*(encoder_data_I32[2]-PIP_EXT_V)+PIP_EXT_ANG;
                 exo_dip_rel_angle = (DIP_FLEX_ANG-DIP_EXT_ANG)/(DIP_FLEX_V-DIP_EXT_V)*(encoder_data_I32[3]-DIP_EXT_V)+DIP_EXT_ANG;
 
 
                 exo_t_rel[0] = exo_mcp_rel_angle*PI/180;
-                exo_t_rel[1] = 0;
+                exo_t_rel[1] = exo_mcp_pip_rel_angle*PI/180;
                 exo_t_rel[2] = exo_pip_rel_angle*PI/180;
                 exo_t_rel[3] = exo_dip_rel_angle*PI/180;
                 exo_t_rel[4] = 0;
@@ -148,7 +147,7 @@ void* sensing_estimation(void *args)
                 encoder_data_file<<t;
                 for(i=0;i<12;i++)
                     encoder_data_file<<"\t"<<estimates[i];
-                encoder_data_file<<"\t"<<exo_t_rel[0]<<"\t"<<exo_t_rel[2]<<"\t"<<exo_t_rel[3];
+                encoder_data_file<<"\t"<<exo_t_rel[0]<<"\t"<<exo_t_rel[1]<<"\t"<<exo_t_rel[2]<<"\t"<<exo_t_rel[3];
                 encoder_data_file<<endl;
 
             }
@@ -278,18 +277,20 @@ void* plot_data(void *args)
         t_window[j] = t;
 
         // Raw Sensor Data
-//        plot_data[0][j] = encoder_data_I32[0];
-//        plot_data[1][j] = encoder_data_I32[2];
-//        plot_data[2][j] = encoder_data_I32[3];
+//        plot_data[0][j] = encoder_data_I32[0]; // MCP
+//        plot_data[1][j] = encoder_data_I32[1]; // MCP-PIP relative
+////        plot_data[1][j] = encoder_data_I32[2]; //PIP
+//        plot_data[2][j] = encoder_data_I32[3]; // DIP
 //        plot_limits[0]=0;
 //        plot_limits[1]=5000;
-//        cout<<encoder_data_I32[0]<<"\t"<<encoder_data_I32[2]<<"\t"<<encoder_data_I32[3]<<endl;
+//        cout<<encoder_data_I32[0]<<"\t"<<encoder_data_I32[1]<<"\t"<<encoder_data_I32[2]<<"\t"<<encoder_data_I32[3]<<endl;
 
         // Exoskeleton Joint Angles
 //        plot_data[0][j] = exo_t_rel[0]*180/PI;
-//        plot_data[1][j] = exo_t_rel[2]*180/PI;
+//        plot_data[1][j] = exo_t_rel[1]*180/PI;
+////        plot_data[1][j] = exo_t_rel[2]*180/PI;
 //        plot_data[2][j] = exo_t_rel[3]*180/PI;
-//        cout<<exo_t_rel[0]*180/PI<<"\t"<<exo_t_rel[2]*180/PI<<"\t"<<exo_t_rel[3]*180/PI<<endl;
+//        cout<<exo_t_rel[0]*180/PI<<"\t"<<exo_t_rel[1]*180/PI<<"\t"<<exo_t_rel[2]*180/PI<<"\t"<<exo_t_rel[3]*180/PI<<endl;
 
         // Estimated Angles
 //        plot_data[0][j] = estimates[3]*180/PI;

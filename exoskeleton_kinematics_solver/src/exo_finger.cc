@@ -37,8 +37,7 @@ exo_finger::exo_finger()
 //    l_FI = pixeltomm*60.07;
 //    l_IJ = pixeltomm*35.5;
 
-    // Priyanshu
-    double pixeltomm = 58.65/(130.32*1000);
+//    // Priyanshu
     x_A = 0.007;
     y_A = -0.026;
 
@@ -54,6 +53,25 @@ exo_finger::exo_finger()
     l_GK = 0.007;
     l_FI = 0.02617;
     l_IJ = 0.01968;
+
+
+//    x_A-0.005,y_A-0.005,l_BC-0.005,l_CD-0.005,l_FG-0.005,l_GH-0.005,l_AH-0.005,
+    // Priyanshu Auto-calibrated
+//    x_A = 0.00986423;
+//    y_A = -0.0240355;
+
+//    l_BC = 0.0414119;
+
+//    l_CD = 0.028;
+//    l_AH = 0.0421161;
+
+//    l_CE = 0.03772;
+//    l_EF = 0.03912;
+//    l_FG = 0.0172878;
+//    l_GH = 0.016;
+//    l_GK = 0.007;
+//    l_FI = 0.02617;
+//    l_IJ = 0.01968;
 
     // Evaluating model parameters
     // MCP Chain
@@ -196,7 +214,7 @@ bool exo_finger::exo_kinematics(double *exo_t, double *estimates)
     else
     {
         cout<<"Failed to solve DIP kinematics!"<<endl;
-        fail_flag=true;
+//        fail_flag=true;
     }
 
     if(!fail_flag)
