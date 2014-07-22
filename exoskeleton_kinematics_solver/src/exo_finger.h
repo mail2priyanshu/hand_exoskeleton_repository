@@ -12,6 +12,25 @@
 #include "definitions.h"
 #endif
 
+#define SAMPLE_SIZE 25
+#define PARAMETER_SIZE 7
+#define MAXEVAL 1e8
+#define MAXTIME 600
+
+typedef Matrix<double, SAMPLE_SIZE, 1> VectorNd;
+
+typedef Matrix<double, 4*SAMPLE_SIZE+PARAMETER_SIZE, 1> Vector4Nd;
+
+// Error in loop closing
+typedef struct
+{
+    double l_CE;
+    double l_EF;
+    VectorNd exo_t1_rel;
+    VectorNd exo_t5_rel;
+    VectorNd exo_t6_rel;
+}data_exo_finger;
+
 class exo_finger {
     double x_A, y_A, r_j, l_AB, l_BC, l_CD, l_CE, l_EF, l_FG, l_GH, l_FI, l_IJ, l_JK, l_GK, l_AH; // user-defined coupled model parameters
     double t_GFK, t_HFG, t_DCH, l_KF, l_HF, l_CH, l_DH; // evaluated model parameters

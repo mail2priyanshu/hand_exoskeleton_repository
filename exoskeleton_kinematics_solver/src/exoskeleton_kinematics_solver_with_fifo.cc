@@ -53,25 +53,176 @@ RTIME counter_time=0;
 //#include "motion_capture.h"
 //#endif // MOTION_CAPTURE_H
 
-ofstream encoder_data_file;
+ofstream encoder_data_file, recorded_calibration_data_file;
 ifstream recorded_data_file;
-sem_t sync_flag_1, sync_flag_2, killing_flag, thread_flag; // declare semaphore (memory location shared between threads)
+//sem_t sync_flag_1, sync_flag_2, killing_flag, thread_flag; // declare semaphore (memory location shared between threads)
 double exo_t_rel[5];
 
 double estimates[12]={0,0,0,0,0,0,0,0,0,0,0,0};
 float pose_data[3]={0,0,0};
+float pose_zero[3]={0,0,0};
 
 int32_t encoder_data_I32[6] = {0, 0, 0, 0, 0, 0};
+
+bool calibrate()
+{
+
+    int i=0;
+    bool fail_flag=FALSE;
+    double exo_mcp_rel_angle=0, exo_mcp_pip_rel_angle=0, exo_pip_rel_angle = 0, exo_dip_rel_angle=0;
+//    double t= 0;
+
+    exo_finger index_finger;
+
+    recorded_calibration_data_file.open("recorded_calibration_data");
+
+    NiFpga_Session session;
+    cout<<"Initializing..."<<endl;
+    /* must be called before any other calls */
+    NiFpga_Status status = NiFpga_Initialize();
+    if (NiFpga_IsNotError(status))
+    {
+        /* opens a session, downloads the bitstream, and runs the FPGA */
+        cout<<"Opening a session...\n"<<endl;
+        NiFpga_MergeStatus(&status, NiFpga_Open(NiFpga_exoskeleton_controller_Bitfile,
+                                                NiFpga_exoskeleton_controller_Signature,
+                                                "rio://10.0.0.1/RIO0", //"rio://146.6.88.17/RIO0",
+                                                NiFpga_OpenAttribute_NoRun,
+                                                &session));
+
+        if (NiFpga_IsNotError(status))
+        {
+
+            /* run the FPGA application */
+            cout<<"Running the FPGA...\n"<<endl;
+            NiFpga_MergeStatus(&status, NiFpga_Run(session, 0));
+
+            cout<<"Press a key to start calibration!"<<endl;
+            getchar();
+            cout<<"Recording data for calibration!"<<endl;
+
+            while(i<10000)
+            {
+
+                // reading encoder data from sbRIO
+                NiFpga_MergeStatus(&status,  NiFpga_ReadArrayI32(session,NiFpga_exoskeleton_controller_IndicatorArrayI32_sensordata,encoder_data_I32,6));
+
+                // converting voltage data to angles
+                //                exo_abd_angle = (ABD_ANG-MCP_EXT_ANG)/(MCP_FLEX_V-MCP_EXT_V)*(encoder_data_I32[0]-MCP_EXT_V)+MCP_EXT_ANG;
+                exo_mcp_rel_angle = (MCP_FLEX_ANG-MCP_EXT_ANG)/(MCP_FLEX_V-MCP_EXT_V)*(encoder_data_I32[0]-MCP_EXT_V)+MCP_EXT_ANG;
+                exo_mcp_pip_rel_angle = (MCP_PIP_FLEX_ANG-MCP_PIP_EXT_ANG)/(MCP_PIP_FLEX_V-MCP_PIP_EXT_V)*(encoder_data_I32[1]-MCP_PIP_EXT_V)+MCP_PIP_EXT_ANG;
+                exo_pip_rel_angle = (PIP_FLEX_ANG-PIP_EXT_ANG)/(PIP_FLEX_V-PIP_EXT_V)*(encoder_data_I32[2]-PIP_EXT_V)+PIP_EXT_ANG;
+                exo_dip_rel_angle = (DIP_FLEX_ANG-DIP_EXT_ANG)/(DIP_FLEX_V-DIP_EXT_V)*(encoder_data_I32[3]-DIP_EXT_V)+DIP_EXT_ANG;
+
+                exo_t_rel[0] = exo_mcp_rel_angle*PI/180;
+                exo_t_rel[1] = exo_mcp_pip_rel_angle*PI/180;
+                exo_t_rel[2] = exo_pip_rel_angle*PI/180;
+                exo_t_rel[3] = exo_dip_rel_angle*PI/180;
+                exo_t_rel[4] = 0;
+
+                //                index_finger.exo_kinematics(exo_t_rel,estimates);
+
+                // printing the encoder data on screen
+                //                for(i=0;i<12;i++)
+                //                {
+                //                    if(i==2||i==11)
+                //                        cout<<"\t"<<estimates[i];
+                //                    else
+                //                        cout<<"\t"<<estimates[i]*180/PI;
+                //                }
+                //                cout<<endl;
+
+                // writing the encoder data to the file
+                recorded_calibration_data_file<<"\t"<<exo_t_rel[0]<<"\t"<<exo_t_rel[1]<<"\t"<<exo_t_rel[2]<<"\t"<<exo_t_rel[3];
+                encoder_data_file<<endl;
+                i++;
+            }
+
+            recorded_calibration_data_file.close();
+
+            cout<<"Done recording data!"<<endl;
+            if(index_finger.exo_calibration())
+                fail_flag=FALSE;
+            else
+                fail_flag=TRUE;
+
+            cout<<"Please straighten your finger for zero pose calibration"<<endl;
+            getchar();
+
+            i=0;
+            while(i<100)
+            {
+                // reading encoder data from sbRIO
+                NiFpga_MergeStatus(&status,  NiFpga_ReadArrayI32(session,NiFpga_exoskeleton_controller_IndicatorArrayI32_sensordata,encoder_data_I32,6));
+
+                exo_mcp_rel_angle = (MCP_FLEX_ANG-MCP_EXT_ANG)/(MCP_FLEX_V-MCP_EXT_V)*(encoder_data_I32[0]-MCP_EXT_V)+MCP_EXT_ANG;
+                exo_mcp_pip_rel_angle = (MCP_PIP_FLEX_ANG-MCP_PIP_EXT_ANG)/(MCP_PIP_FLEX_V-MCP_PIP_EXT_V)*(encoder_data_I32[1]-MCP_PIP_EXT_V)+MCP_PIP_EXT_ANG;
+                exo_pip_rel_angle = (PIP_FLEX_ANG-PIP_EXT_ANG)/(PIP_FLEX_V-PIP_EXT_V)*(encoder_data_I32[2]-PIP_EXT_V)+PIP_EXT_ANG;
+                exo_dip_rel_angle = (DIP_FLEX_ANG-DIP_EXT_ANG)/(DIP_FLEX_V-DIP_EXT_V)*(encoder_data_I32[3]-DIP_EXT_V)+DIP_EXT_ANG;
+
+                exo_t_rel[0] = exo_t_rel[0]+exo_mcp_rel_angle*PI/180;
+                exo_t_rel[1] = exo_t_rel[1]+exo_mcp_pip_rel_angle*PI/180;
+                exo_t_rel[2] = exo_t_rel[2]+exo_pip_rel_angle*PI/180;
+                exo_t_rel[3] = exo_t_rel[3]+exo_dip_rel_angle*PI/180;
+                exo_t_rel[4] = exo_t_rel[4]+0;
+                i++;
+            }
+
+            for(i=0;i<5;i++)
+            {
+                exo_t_rel[i]=exo_t_rel[i]/100;
+                cout<<exo_t_rel[i]<<endl;
+            }
+
+            getchar();
+
+            cout<<"Evaluating zero pose!"<<endl;
+            index_finger.exo_kinematics(exo_t_rel,estimates);
+
+            pose_zero[0] = (2*PI-estimates[3]);
+            pose_zero[1] = (2*PI-estimates[7])-pose_zero[0];
+            pose_zero[2] = (2*PI-estimates[11])-pose_zero[0]-pose_zero[1];
+            cout<<"Zero pose set to = "<<pose_zero[0]<<"\t"<<pose_zero[1]<<"\t"<<pose_zero[2]<<endl;
+            getchar();
+            pose_zero[0] = 0;
+            pose_zero[1] = 0;
+            pose_zero[2] = 0;
+
+            /* close the session now that we're done */
+            cout<<"Closing the session..."<<endl;
+
+            /* must close if we successfully opened */
+            NiFpga_MergeStatus(&status, NiFpga_Close(session, 0));
+
+        }
+        /* must be called after all other calls */
+        cout<<"Finalizing..."<<endl;
+        NiFpga_MergeStatus(&status, NiFpga_Finalize());
+
+    }
+
+    /* check if anything went wrong */
+    else
+        if (NiFpga_IsError(status))
+        {
+            cout<<"Error!"<<status<<endl;
+            cout<<"Press <Enter> to quit..."<<endl;
+            getchar();
+        }
+
+    return fail_flag;
+
+
+}
 
 
 void* sensing_estimation(void *args)
 {
     unsigned long task_name =nam2num("ENCODER");
 
-    int i;//,j=0;
-    //    bool flag_points=0;
+    int i;
 
-    double exo_mcp_rel_angle=0, exo_mcp_pip_rel_angle=0, exo_pip_rel_angle = 0, exo_dip_rel_angle=0; //exo_prox_angle = 0
+    double exo_mcp_rel_angle=0, exo_mcp_pip_rel_angle=0, exo_pip_rel_angle = 0, exo_dip_rel_angle=0;
     RTIME old_time, current_time=0;
     double t= 0;
 
@@ -87,7 +238,7 @@ void* sensing_estimation(void *args)
         cout<<"Opening a session...\n"<<endl;
         NiFpga_MergeStatus(&status, NiFpga_Open(NiFpga_exoskeleton_controller_Bitfile,
                                                 NiFpga_exoskeleton_controller_Signature,
-                                                "rio://146.6.88.17/RIO0", //"rio://169.254.84.198/RIO0",
+                                                "rio://146.6.88.17/RIO0",
                                                 NiFpga_OpenAttribute_NoRun,
                                                 &session));
 
@@ -105,6 +256,7 @@ void* sensing_estimation(void *args)
             }
 
             cout<<"THREAD INIT EXOSKELETON CONROLLER: name = "<<task_name<<", address = "<<task<<endl;
+
             mlockall(MCL_CURRENT | MCL_FUTURE);
             rt_make_hard_real_time();
 
@@ -132,19 +284,15 @@ void* sensing_estimation(void *args)
 
                 index_finger.exo_kinematics(exo_t_rel,estimates);
 
-                current_time = rt_get_time_ns();//clock();
-
-                cout<<"("<<(current_time-old_time)<<")";
-
                 // printing the encoder data on screen
-//                for(i=0;i<12;i++)
-//                {
-//                    if(i==2||i==11)
-//                        cout<<"\t"<<estimates[i];
-//                    else
-//                        cout<<"\t"<<estimates[i]*180/PI;
-//                }
-//                cout<<endl;
+                //                for(i=0;i<12;i++)
+                //                {
+                //                    if(i==2||i==11)
+                //                        cout<<"\t"<<estimates[i];
+                //                    else
+                //                        cout<<"\t"<<estimates[i]*180/PI;
+                //                }
+                //                cout<<endl;
 
                 // writing the encoder data to the file
                 encoder_data_file<<t;
@@ -154,14 +302,17 @@ void* sensing_estimation(void *args)
                 encoder_data_file<<endl;
 
                 // writing data to FIFO
-                pose_data[0] = (2*PI-estimates[3]);
-                pose_data[1] = (2*PI-estimates[7])-pose_data[0];
-                pose_data[2] = (2*PI-estimates[11])-pose_data[0]-pose_data[1];
+                pose_data[0] = (2*PI-estimates[3])-pose_zero[0];
+                pose_data[1] = (2*PI-estimates[7])-pose_data[0]-pose_zero[1];
+                pose_data[2] = (2*PI-estimates[11])-pose_data[0]-pose_data[1]-pose_zero[2];
                 cout<<pose_data[0]<<"\t"<<pose_data[1]<<"\t"<<pose_data[2]<<endl;
                 rtf_put(FIFO, (char*)&pose_data, sizeof(pose_data));
 
-                rt_sleep_until(nano2count(old_time+1000000000/ENCODER_READ_FREQ));
+                current_time = rt_get_time_ns();//clock();
 
+                cout<<"("<<(current_time-old_time)<<")";
+
+                rt_sleep_until(nano2count(old_time+1000000000/ENCODER_READ_FREQ));
             }
 
             /* close the session now that we're done */
@@ -180,10 +331,10 @@ void* sensing_estimation(void *args)
     else
         if (NiFpga_IsError(status))
         {
-        cout<<"Error!"<<status<<endl;
-        cout<<"Press <Enter> to quit..."<<endl;
-        getchar();
-    }
+            cout<<"Error!"<<status<<endl;
+            cout<<"Press <Enter> to quit..."<<endl;
+            getchar();
+        }
     rt_make_soft_real_time();
     rt_task_delete(task);
     return 0;
@@ -289,25 +440,25 @@ void* plot_data(void *args)
         t_window[j] = t;
 
         // Raw Sensor Data
-//        plot_data[0][j] = encoder_data_I32[0]; // MCP
-//        plot_data[1][j] = encoder_data_I32[1]; // MCP-PIP relative
-////        plot_data[1][j] = encoder_data_I32[2]; //PIP
-//        plot_data[2][j] = encoder_data_I32[3]; // DIP
-//        plot_limits[0]=0;
-//        plot_limits[1]=5000;
-//        cout<<encoder_data_I32[0]<<"\t"<<encoder_data_I32[1]<<"\t"<<encoder_data_I32[2]<<"\t"<<encoder_data_I32[3]<<endl;
+        //        plot_data[0][j] = encoder_data_I32[0]; // MCP
+        //        plot_data[1][j] = encoder_data_I32[1]; // MCP-PIP relative
+        ////        plot_data[1][j] = encoder_data_I32[2]; //PIP
+        //        plot_data[2][j] = encoder_data_I32[3]; // DIP
+        //        plot_limits[0]=0;
+        //        plot_limits[1]=5000;
+        //        cout<<encoder_data_I32[0]<<"\t"<<encoder_data_I32[1]<<"\t"<<encoder_data_I32[2]<<"\t"<<encoder_data_I32[3]<<endl;
 
         // Exoskeleton Joint Angles
-//        plot_data[0][j] = exo_t_rel[0]*180/PI;
-//        plot_data[1][j] = exo_t_rel[1]*180/PI;
-////        plot_data[1][j] = exo_t_rel[2]*180/PI;
-//        plot_data[2][j] = exo_t_rel[3]*180/PI;
-//        cout<<exo_t_rel[0]*180/PI<<"\t"<<exo_t_rel[1]*180/PI<<"\t"<<exo_t_rel[2]*180/PI<<"\t"<<exo_t_rel[3]*180/PI<<endl;
+        //        plot_data[0][j] = exo_t_rel[0]*180/PI;
+        //        plot_data[1][j] = exo_t_rel[1]*180/PI;
+        ////        plot_data[1][j] = exo_t_rel[2]*180/PI;
+        //        plot_data[2][j] = exo_t_rel[3]*180/PI;
+        //        cout<<exo_t_rel[0]*180/PI<<"\t"<<exo_t_rel[1]*180/PI<<"\t"<<exo_t_rel[2]*180/PI<<"\t"<<exo_t_rel[3]*180/PI<<endl;
 
         // Estimated Angles
-//        plot_data[0][j] = estimates[3]*180/PI;
-//        plot_data[1][j] = estimates[7]*180/PI;
-//        plot_data[2][j] = estimates[11]*180/PI;
+        //        plot_data[0][j] = estimates[3]*180/PI;
+        //        plot_data[1][j] = estimates[7]*180/PI;
+        //        plot_data[2][j] = estimates[11]*180/PI;
         
         // Finger Joint Angles
         plot_data[0][j] = (2*PI-estimates[3])*180/PI;
@@ -351,11 +502,11 @@ int main(int argc, char *argv[])
     int result = 0;
 
     encoder_data_file.open("encoder_data.csv");
-    recorded_data_file.open("encoder_data_YY_E_high.txt");
+    //    recorded_data_file.open("encoder_data_YY_E_high.txt");
 
     RTIME tick_period;
     pthread_t sensing_estimation_thread, plotting_thread;
-//    pthread capture_motion_thread;// ; //motor_control_thread
+    //    pthread capture_motion_thread;// ; //motor_control_thread
     rt_allow_nonroot_hrt();
     if (!(main_task = rt_task_init_schmod(nam2num("CTRTSK"), 0, 0, 0,SCHED_FIFO, CPU_MAP)))
     {
@@ -371,14 +522,20 @@ int main(int argc, char *argv[])
 
     counter_time = rt_get_time_ns();
 
-//    pthread_create(&sensing_estimation_thread, 0, recorded_estimation, (void *)(result));
-    pthread_create(&sensing_estimation_thread, 0, sensing_estimation, (void *)(result));
-    pthread_create(&plotting_thread, 0, plot_data, (void *)(result));
-    //    pthread_create(&capture_motion_thread, 0, capture_motion, (void *)(result));
+    if(!calibrate())
+    {
+        pthread_create(&sensing_estimation_thread, 0, sensing_estimation, (void *)(result));
+//        pthread_create(&plotting_thread, 0, plot_data, (void *)(result));
+        //    pthread_create(&capture_motion_thread, 0, capture_motion, (void *)(result));
 
-    cout<<"Press <Enter> to stop and quit..."<<endl;
-    getchar();
-    running_flag = 0;
+        cout<<"Press <Enter> to stop and quit..."<<endl;
+        getchar();
+        running_flag = 0;
+    }
+    else
+    {
+        cout<<"Falied to calibrate device! Please try again!"<<endl;
+    }
     usleep(1000000);
 
     stop_rt_timer();

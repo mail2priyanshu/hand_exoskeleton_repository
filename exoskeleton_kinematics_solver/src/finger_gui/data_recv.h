@@ -2,7 +2,7 @@
 #define DATA_RECV_H
 
 #include <QMainWindow>
-//#include <QObject>
+#include <QObject>
 #include <QSocketNotifier>
 #include <cfinger.h>
 
