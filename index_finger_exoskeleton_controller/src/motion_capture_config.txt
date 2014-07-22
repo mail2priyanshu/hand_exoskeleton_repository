@@ -1,0 +1,7 @@
+8
+146.6.84.254
+
+%% Configuration Key
+Number of Markers
+Server IP
+
